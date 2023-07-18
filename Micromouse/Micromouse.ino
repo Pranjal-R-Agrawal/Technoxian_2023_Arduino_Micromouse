@@ -1,9 +1,15 @@
+#define rows 16
+#define cols 16
+#define linearse(row, col) row * cols + col
+#define delinearise_row(location) location / cols
+#define delinearise_col(location) location % cols
+
+byte distanceArray[rows * cols];
+
 void setup() {
-  // put your setup code here, to run once:
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 
 }
