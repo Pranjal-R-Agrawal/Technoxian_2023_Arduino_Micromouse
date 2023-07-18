@@ -2,12 +2,16 @@
   * https://docs.arduino.cc/learn/programming/bit-math
   * http://www.123seminarsonly.com/Seminar-Reports/038/59360985-Maze-Solving-Algorithms.pdf
   * https://github.com/Craga89/Micromouse/
+  * https://codebender.cc/library/QueueList#QueueList.h
+  * https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
 */
+
+#include "QueueList.h"
 
 #define rows 16
 #define cols 16
 
-#define linearse(row, col) row * cols + col
+#define linearse(row, col) row* cols + col
 #define delinearise_row(location) location / cols
 #define delinearise_col(location) location % cols
 
@@ -19,16 +23,18 @@
 #define South 2
 #define West 3
 
-struct cell{
+struct cell {
   byte flood;
   byte neighbours;
 };
 
 cell floodArray[rows * cols];
 
+QueueList<byte> queue;
+
 void setup() {
   Serial.begin(9600);
-  for(byte i = 0; i < 256; i++) {
+  for (byte i = 0; i < 256; i++) {
     floodArray[i].flood = 255;
     floodArray[i].neighbours = 0;
     if (i == 255) break;
