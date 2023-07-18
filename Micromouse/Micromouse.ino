@@ -6,22 +6,20 @@
   * https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
 */
 
-#include "QueueList.h"
-
 #define rows 16
 #define cols 16
 
-#define linearse(row, col) row* cols + col
-#define delinearise_row(location) location / cols
-#define delinearise_col(location) location % cols
+#define linearise(row, col) row* cols + col
+#define delineariseRow(location) location / cols
+#define delineariseCol(location) location % cols
 
-#define toggleWall(location, direction) floodArray[location].neighbours |= 1 << direction
-#define readWall(location, direction) bitRead(floodArray[location].neighbours, direction)
+#define markWall(location, direction) floodArray[location].neighbours |= 1 << direction
+#define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
 
-#define North 0
-#define East 1
-#define South 2
-#define West 3
+#define north 0
+#define east 1
+#define south 2
+#define west 3
 
 struct cell {
   byte flood;
