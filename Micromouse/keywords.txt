@@ -1,0 +1,20 @@
+#######################################
+# Syntax Colouring Map For QueueList
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+CircularBufferQueue	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+enqueue	KEYWORD2
+dequeue	KEYWORD2
+peek	KEYWORD2
+isEmpty	KEYWORD2
+isFull	KEYWORD2
+CircularBufferQueue	KEYWORD2
