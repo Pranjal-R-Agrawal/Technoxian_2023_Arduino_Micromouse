@@ -40,6 +40,14 @@
 #define uTurn 2
 #define leftTurn 3
 
+#define leftSensor 0
+#define diagonalLeftSensor 1
+#define centreSensor 2
+#define diagonalRightSenson 3
+#define rightSensor 6
+
+#define threshold 200
+
 struct cell {
   byte flood;
   byte neighbours;
@@ -52,9 +60,9 @@ CircularBufferQueue floodQueue;                                                 
 byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
 byte cellDirectionAddition[4] = { -16, 1, 16, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
-byte updateDirectionTurnAmount[4] = {0, rightTurn, uTurn, leftTurn};
+byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 
-byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection;
+byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection, neighbourLocation;
 
 void setup() {
   Serial.begin(9600);
@@ -109,4 +117,35 @@ void goToTargetCell(byte location) {
   updateDirection(&leftDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&currentDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&rightDir, updateDirectionTurnAmount[targetRelativeDirection]);
+}
+
+void updateWalls(byte location) {
+  if (analogRead(leftSensor) > threshold) {
+    markWall(location, leftDir);
+    if (checkNeighbourValidity(location, leftDir)) {
+      neighbourLocation = getNeighbourLocation(location, leftDir);
+      markWall(neighbourLocation, (leftDir + 2) % 4);
+    }
+  }
+  if (analogRead(centreSensor) > threshold) {
+    markWall(location, currentDir);
+    if (checkNeighbourValidity(location, currentDir)) {
+      neighbourLocation = getNeighbourLocation(location, currentDir);
+      markWall(neighbourLocation, (currentDir + 2) % 4);
+    }
+  }
+  if (analogRead(rightSensor) > threshold) {
+    markWall(location, rightDir);
+    if (checkNeighbourValidity(location, rightDir)) {
+      neighbourLocation = getNeighbourLocation(location, rightDir);
+      markWall(neighbourLocation, (rightDir + 2) % 4);
+    }
+  }
+}
+
+bool checkNeighbourValidity(byte location, byte direction) {
+  if (direction == north) return delineariseRow(location) > 0;
+  elif (direction == east) return delineariseCol(location) < (cols - 1);
+  elif (direction == south) return delineariseRow(location) < (rows - 1);
+  elif (direction == west) return delineariseCol(location) > 0
 }
