@@ -22,7 +22,7 @@
 
 // Cell macros
 #define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
-#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction] // Calculates the location of neighbour
+#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction]       // Calculates the location of neighbour
 #define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
 
 #define north 0
@@ -45,7 +45,7 @@ CircularBufferQueue floodQueue;                                                 
 
 byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
-byte cellDirectionAddition[4] = { -16, 1, 16, -1 }; // The location of a neighbouring cell can be obtained using the values in this dictionary
+byte cellDirectionAddition[4] = { -16, 1, 16, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 
 byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell;
 
@@ -71,6 +71,19 @@ void flood(byte location) {
     if (readingCellDistance != minNeighbourDistance + 1) {
       readingCellDistance == minNeighbourDistance + 1;
       for (byte i = 0; i < 4; i++) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+    }
+  }
+}
+
+void updateTargetCell(byte location) {
+  targetCell = getNeighbourLocation(location, 0);
+  minNeighbourDistance = getNeighbourDistance(location, 0);
+  for (byte i = 1; i < 4; i++) {
+    readingCellLoc = getNeighbourLocation(location, i);
+    readingCellDistance = getNeighbourDistance(location, i);
+    if (readingCellDistance < minNeighbourDistance) {
+      minNeighbourDistance = readingCellDistance;
+      targetCell = readingCellLoc;
     }
   }
 }
