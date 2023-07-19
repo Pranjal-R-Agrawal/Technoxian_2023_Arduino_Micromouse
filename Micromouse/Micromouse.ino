@@ -47,6 +47,8 @@ byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
 byte cellDirectionAddition[4] = { -16, 1, 16, -1 }; // The location of a neighbouring cell can be obtained using the values in this dictionary
 
+byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell;
+
 void setup() {
   Serial.begin(9600);
   for (byte i = 0; i < 256; i++) {
@@ -57,4 +59,18 @@ void setup() {
 }
 
 void loop() {
+}
+
+void flood(byte location) {
+  floodQueue.enqueue(location);
+  while (!floodQueue.isEmpty()) {
+    readingCellLoc = *floodQueue.dequeue();
+    readingCellDistance = floodArray[readingCellLoc].flood;
+    minNeighbourDistance = getNeighbourDistance(readingCellLoc, north);
+    for (byte i = 1; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
+    if (readingCellDistance != minNeighbourDistance + 1) {
+      readingCellDistance == minNeighbourDistance + 1;
+      for (byte i = 0; i < 4; i++) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+    }
+  }
 }
