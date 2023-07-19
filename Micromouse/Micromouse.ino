@@ -11,7 +11,7 @@
 #define cols 16
 
 // Matrix macros
-#define linearise(row, col) row* cols + col
+#define linearise(row, col) row * cols + col
 #define delineariseRow(location) location / cols
 #define delineariseCol(location) location % cols
 
@@ -26,8 +26,8 @@
 
 // Direction macros
 #define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
-#define getTargetAbsoluteDirection(diff) (diff == -16) ? north : (diff == 1)  ? east \
-                                                               : (diff == 16) ? south \
+#define getTargetAbsoluteDirection(diff) (diff == -rows) ? north : (diff == 1)  ? east \
+                                                               : (diff == rows) ? south \
                                                                : (diff == -1) ? west \
                                                                               : west  // Determines direction from difference between cell locations
 
@@ -59,14 +59,14 @@ CircularBufferQueue floodQueue;                                                 
 
 byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
-byte cellDirectionAddition[4] = { -16, 1, 16, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
+byte cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 
 byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection, neighbourLocation;
 
 void setup() {
   Serial.begin(9600);
-  for (byte i = 0; i < 256; i++) {
+  for (byte i = 0; i < (rows * cols); i++) {
     floodArray[i].flood = min(min(distance(i, targetCells[0]), distance(i, targetCells[1])), min(distance(i, targetCells[2]), distance(i, targetCells[3])));
     floodArray[i].neighbours = 0;  // The bot assumes that there are no walls
     if (i == 255) break;
