@@ -10,19 +10,29 @@
 #define rows 16
 #define cols 16
 
+// Matrix macros
 #define linearise(row, col) row* cols + col
 #define delineariseRow(location) location / cols
 #define delineariseCol(location) location % cols
 
+// Wall macros
 #define distance(loc1, loc2) abs(delineariseRow(loc1) - delineariseRow(loc2)) + abs(delineariseCol(loc1) - delineariseCol(loc2))
-
 #define markWall(location, direction) floodArray[location].neighbours |= 1 << direction
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
+
+// Cell macros
+#define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
+#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction] // Calculates the location of neighbour
+#define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
 
 #define north 0
 #define east 1
 #define south 2
 #define west 3
+
+#define leftTurn 3
+#define uTurn 2
+#define rightTurn 1
 
 struct cell {
   byte flood;
@@ -32,6 +42,10 @@ struct cell {
 cell floodArray[rows * cols];                                                                 // This array stores the flood value and neighbour data for all the cells
 byte targetCells[] = { linearise(7, 7), linearise(7, 8), linearise(8, 7), linearise(8, 8) };  // This array stores the target cells
 CircularBufferQueue floodQueue;                                                               // This queue stores the cells that need to be flooded
+
+byte currentCell = linearise(0, 0);
+byte leftDir = north, currentDir = east, rightDir = south;
+byte cellDirectionAddition[4] = { -16, 1, 16, -1 }; // The location of a neighbouring cell can be obtained using the values in this dictionary
 
 void setup() {
   Serial.begin(9600);
