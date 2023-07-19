@@ -74,6 +74,13 @@ void setup() {
 }
 
 void loop() {
+  while (currentCell != targetCells[0] && currentCell != targetCells[1] && currentCell != targetCells[2] && currentCell != targetCells[3]) {
+    updateWalls(currentCell);
+    flood(currentCell);
+    updateTargetCell(currentCell);
+    goToTargetCell(currentCell);
+    currentCell = targetCell;
+  }
 }
 
 void flood(byte location) {
@@ -145,7 +152,7 @@ void updateWalls(byte location) {
 
 bool checkNeighbourValidity(byte location, byte direction) {
   if (direction == north) return delineariseRow(location) > 0;
-  elif (direction == east) return delineariseCol(location) < (cols - 1);
-  elif (direction == south) return delineariseRow(location) < (rows - 1);
-  elif (direction == west) return delineariseCol(location) > 0
+  else if (direction == east) return delineariseCol(location) < (cols - 1);
+  else if (direction == south) return delineariseRow(location) < (rows - 1);
+  else if (direction == west) return delineariseCol(location) > 0
 }
