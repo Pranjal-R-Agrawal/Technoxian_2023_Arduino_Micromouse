@@ -1,5 +1,5 @@
-#ifndef Queue_h
-#define Queue_h
+#ifndef LinkedListQueue_h
+#define LinkedListQueue_h
 
 #include "Arduino.h"
 
