@@ -6,12 +6,12 @@ typedef struct _node {
   _node *next;
 } _node;
 
-Queue::Queue() {
+LinkedListQueue::LinkedListQueue() {
   _node *_head = nullptr;
   _node *_tail = nullptr;
 }
 
-void Queue::enqueue(byte item) {
+void LinkedListQueue::enqueue(byte item) {
   _node *node = new _node;  // Allocate memory for a new _node object
   node->item = item;
   node->next = nullptr;
@@ -25,7 +25,7 @@ void Queue::enqueue(byte item) {
   }
 }
 
-byte Queue::dequeue() {
+byte LinkedListQueue::dequeue() {
   if (_head) {
     _node *node = _head;
     byte item = _head->item;
@@ -35,11 +35,11 @@ byte Queue::dequeue() {
   }
 }
 
-bool Queue::isEmpty() {
+bool LinkedListQueue::isEmpty() {
   return !(bool) _head;
 }
 
-Queue::~Queue() {
+LinkedListQueue::~LinkedListQueue() {
   while (!isEmpty()) {
     dequeue();
   }

@@ -3,10 +3,10 @@
 
 #include "Arduino.h"
 
-class Queue {
+class LinkedListQueue {
   public:
-    Queue();
-    ~Queue();
+    LinkedListQueue();
+    ~LinkedListQueue();
     void enqueue(byte item);
     byte dequeue();
     bool isEmpty();
