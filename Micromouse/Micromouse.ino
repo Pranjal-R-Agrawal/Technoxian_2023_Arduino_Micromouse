@@ -2,16 +2,17 @@
   * https://docs.arduino.cc/learn/programming/bit-math
   * http://www.123seminarsonly.com/Seminar-Reports/038/59360985-Maze-Solving-Algorithms.pdf
   * https://github.com/Craga89/Micromouse/
-  * https://codebender.cc/library/QueueList#QueueList.h
   * https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
 */
 
 #define rows 16
 #define cols 16
 
-#define linearise(row, col) row* cols + col
-#define delineariseRow(location) location / cols
+#define linearise(row, col) row * cols + col
+#define delineariseRow(location) floor(location / cols)
 #define delineariseCol(location) location % cols
+
+#define distance(loc1, loc2) abs(delineariseRow(loc1) - delineariseRow(loc2)) + abs(delineariseCol(loc1) - delineariseCol(loc2))
 
 #define markWall(location, direction) floodArray[location].neighbours |= 1 << direction
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
@@ -26,14 +27,17 @@ struct cell {
   byte neighbours;
 };
 
-cell floodArray[rows * cols];
+cell floodArray[rows * cols];  // This array stores the flood value and neighbour data for all the cells
+byte floodCells[256];          // This array contains the location of the cells that need to be flooded
+byte targetCells[] = {linearise(7, 7), linearise(7, 8), linearise(8, 7), linearise(8, 8)};  // This array stores the target cells
 
-QueueList<byte> queue;
+byte floodingCell;  // This stores the index of the cell in the floodCells that is currently being flooded
+byte latestCell;    // This stores the index of the latest added cell in the array floodCells. New cells will be added after this
 
 void setup() {
   Serial.begin(9600);
   for (byte i = 0; i < 256; i++) {
-    floodArray[i].flood = 255;
+    floodArray[i].flood = min(min(distance(i, targetCells[0]), distance(i, targetCells[1])), min(distance(i, targetCells[2]), distance(i, targetCells[3])));
     floodArray[i].neighbours = 0;
     if (i == 255) break;
   }
