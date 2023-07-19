@@ -21,18 +21,24 @@
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
 
 // Cell macros
-#define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
-#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction]       // Calculates the location of neighbour
+#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction]  // Calculates the location of neighbour
 #define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
+
+// Direction macros
+#define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
+#define getTargetAbsoluteDirection(diff) (diff == -16) ? north : (diff == 1)  ? east \
+                                                               : (diff == 16) ? south \
+                                                               : (diff == -1) ? west \
+                                                                              : west  // Determines direction from difference between cell locations
 
 #define north 0
 #define east 1
 #define south 2
 #define west 3
 
-#define leftTurn 3
-#define uTurn 2
 #define rightTurn 1
+#define uTurn 2
+#define leftTurn 3
 
 struct cell {
   byte flood;
@@ -46,8 +52,9 @@ CircularBufferQueue floodQueue;                                                 
 byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
 byte cellDirectionAddition[4] = { -16, 1, 16, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
+byte updateDirectionTurnAmount[4] = {0, rightTurn, uTurn, leftTurn};
 
-byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell;
+byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection;
 
 void setup() {
   Serial.begin(9600);
@@ -86,4 +93,20 @@ void updateTargetCell(byte location) {
       targetCell = readingCellLoc;
     }
   }
+}
+
+void goToTargetCell(byte location) {
+  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell - location) + 4 - currentDir) % 4;
+  if (targetRelativeDirection == north) {
+    // motor function to go straight
+  } else if (targetRelativeDirection == east) {
+    // motor function to take a left-turn
+  } else if (targetRelativeDirection == south) {
+    // motor function to take a u-turn
+  } else if (targetRelativeDirection == west) {
+    // motor function to take a left-turn
+  }
+  updateDirection(&leftDir, updateDirectionTurnAmount[targetRelativeDirection]);
+  updateDirection(&currentDir, updateDirectionTurnAmount[targetRelativeDirection]);
+  updateDirection(&rightDir, updateDirectionTurnAmount[targetRelativeDirection]);
 }
