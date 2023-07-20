@@ -26,10 +26,6 @@
 
 // Direction macros
 #define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
-#define getTargetAbsoluteDirection(diff) (diff == -rows) ? north : (diff == 1)    ? east \
-                                                                 : (diff == rows) ? south \
-                                                                 : (diff == -1)   ? west \
-                                                                                  : west  // Determines direction from difference between cell locations
 
 #define north 0
 #define east 1
@@ -115,7 +111,7 @@ void updateTargetCell(byte location) {
 }
 
 void goToTargetCell(byte location) {
-  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell - location) + 4 - currentDir) % 4;
+  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell, location) + 4 - currentDir) % 4;
   if (targetRelativeDirection == north) {
     // motor function to go straight
   } else if (targetRelativeDirection == east) {
@@ -159,4 +155,12 @@ bool checkNeighbourValidity(byte location, byte direction) {
   else if (direction == east) return delineariseCol(location) < (cols - 1);
   else if (direction == south) return delineariseRow(location) < (rows - 1);
   else if (direction == west) return delineariseCol(location) > 0;
+}
+
+byte getTargetAbsoluteDirection(short target, short location) {
+  short diff = target - location;
+  if (diff == -16) return north;
+  if (diff == 1) return east;
+  if (diff == 16) return south;
+  if (diff == -1) return west;
 }
