@@ -92,11 +92,18 @@ void flood() {
     readingCellLoc = *floodQueue.dequeue();
     readingCellDistance = floodArray[readingCellLoc].flood;
     minNeighbourDistance = 255;
-    for (byte i = 0; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
-    if (readingCellDistance != minNeighbourDistance + 1) {
+    for (byte i = 0; i < 4; i++) {
+      minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
+    }
+    if (minNeighbourDistance != readingCellDistance - 1) {
       floodArray[readingCellLoc].flood = minNeighbourDistance + 1;
-      for (byte i = 0; i < 4; i++)
-        if (!wallExists(readingCellLoc, i)) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+      for (byte i = 0; i < 4; i++) {
+        if (checkNeighbourValidity(readingCellLoc, i)) {
+          if (!isCentre(getNeighbourLocation(readingCellLoc, i))) {
+            floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+          }
+        }
+      }
     }
   }
 }
@@ -172,4 +179,8 @@ byte getTargetAbsoluteDirection(byte target) {
 
 byte getTargetRelativeDirection(byte target) {
   return (getTargetAbsoluteDirection(target) + 4 - currentDir) % 4;
+}
+
+bool isCentre(byte location) {
+  return floodArray[location].flood == 0;
 }
