@@ -21,7 +21,7 @@
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
 
 // Cell macros
-#define getNeighbourLocation(location, direction) (byte) ((short) location + cellDirectionAddition[direction])  // Calculates the location of neighbour
+#define getNeighbourLocation(location, direction) (byte)((short)location + cellDirectionAddition[direction])  // Calculates the location of neighbour
 #define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
 
 // Direction macros
@@ -49,16 +49,19 @@ struct cell {
   byte neighbours;
 };
 
-cell floodArray[rows * cols];                                                                 // This array stores the flood value and neighbour data for all the cells
+cell floodArray[rows * cols];  // This array stores the flood value and neighbour data for all the cells
+
 byte targetCells[] = { linearise(7, 7), linearise(7, 8), linearise(8, 7), linearise(8, 8) };  // This array stores the target cells
-CircularBufferQueue floodQueue;                                                               // This queue stores the cells that need to be flooded
+
+CircularBufferQueue floodQueue(256);  // This queue stores the cells that need to be flooded
 
 byte currentCell = linearise(0, 0), targetCell;
 byte leftDir = north, currentDir = east, rightDir = south;
 short cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
+byte targetScoreFromDirection[4] = { 0, 1, 2, 1 };
 
-byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetRelativeDirection;
+byte readingCellLoc, readingCellDistance, readingCellScore, minNeighbourDistance, targetRelativeDirection, targetScore;
 
 void setup() {
   for (byte i = 0; i < (rows * cols); i++) {
@@ -92,26 +95,31 @@ void flood() {
     for (byte i = 0; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
     if (readingCellDistance != minNeighbourDistance + 1) {
       floodArray[readingCellLoc].flood = minNeighbourDistance + 1;
-      for (byte i = 0; i < 4; i++) if (!wallExists(readingCellLoc, i)) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+      for (byte i = 0; i < 4; i++)
+        if (!wallExists(readingCellLoc, i)) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
     }
   }
 }
 
 void updateTargetCell() {
-  targetCell = getNeighbourLocation(currentCell, 0);
   minNeighbourDistance = getNeighbourDistance(currentCell, 0);
-  for (byte i = 1; i < 4; i++) {
-    readingCellLoc = getNeighbourLocation(currentCell, i);
-    readingCellDistance = getNeighbourDistance(currentCell, i);
-    if (readingCellDistance < minNeighbourDistance) {
-      minNeighbourDistance = readingCellDistance;
-      targetCell = readingCellLoc;
+  targetScore = 3;
+  for (byte i = 0; i < 4; i++) {
+    if (!wallExists(currentCell, i)) {
+      readingCellLoc = getNeighbourLocation(currentCell, i);
+      readingCellDistance = getNeighbourDistance(currentCell, i);
+      readingCellScore = targetScoreFromDirection[getTargetRelativeDirection(readingCellLoc)];
+      if ((readingCellDistance < minNeighbourDistance) || ((readingCellDistance == minNeighbourDistance) && (readingCellScore < targetScore))) {
+        minNeighbourDistance = readingCellDistance;
+        targetScore = readingCellScore;
+        targetCell = readingCellLoc;
+      }
     }
   }
 }
 
 void goToTargetCell() {
-  targetRelativeDirection = getTargetRelativeDirection();
+  targetRelativeDirection = getTargetRelativeDirection(targetCell);
   if (targetRelativeDirection == north) {
     // motor function to go straight
   } else if (targetRelativeDirection == east) {
@@ -154,14 +162,14 @@ bool checkNeighbourValidity(byte location, byte direction) {
   else if (direction == west) return delineariseCol(location) > 0;
 }
 
-byte getTargetAbsoluteDirection() {
-  short diff = targetCell - currentCell;
+byte getTargetAbsoluteDirection(byte target) {
+  short diff = (short)target - (short)currentCell;
   if (diff == -16) return north;
   if (diff == 1) return east;
   if (diff == 16) return south;
   if (diff == -1) return west;
 }
 
-byte getTargetRelativeDirection() {
-  return (getTargetAbsoluteDirection() + 4 - currentDir) % 4;
+byte getTargetRelativeDirection(byte target) {
+  return (getTargetAbsoluteDirection(target) + 4 - currentDir) % 4;
 }
