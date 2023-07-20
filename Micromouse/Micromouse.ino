@@ -53,16 +53,17 @@ cell floodArray[rows * cols];                                                   
 byte targetCells[] = { linearise(7, 7), linearise(7, 8), linearise(8, 7), linearise(8, 8) };  // This array stores the target cells
 CircularBufferQueue floodQueue;                                                               // This queue stores the cells that need to be flooded
 
-byte currentCell = linearise(0, 0);
+byte currentCell = linearise(0, 0), targetCell;
 byte leftDir = north, currentDir = east, rightDir = south;
 short cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 
-byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection, neighbourLocation;
+byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetRelativeDirection;
 
 void setup() {
   for (byte i = 0; i < (rows * cols); i++) {
-    floodArray[i].flood = min(min(distance(i, targetCells[0]), distance(i, targetCells[1])), min(distance(i, targetCells[2]), distance(i, targetCells[3])));
+    floodArray[i].flood = 255;
+    for (byte j = 0; j < 4; j++) floodArray[i].flood = min(floodArray[i].flood, distance(i, targetCells[j]));
     floodArray[i].neighbours = 0;
     if (delineariseRow(i) == 0) markWall(i, north);
     if (delineariseCol(i) == 0) markWall(i, west);
@@ -110,7 +111,7 @@ void updateTargetCell() {
 }
 
 void goToTargetCell() {
-  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell, currentCell) + 4 - currentDir) % 4;
+  targetRelativeDirection = getTargetRelativeDirection();
   if (targetRelativeDirection == north) {
     // motor function to go straight
   } else if (targetRelativeDirection == east) {
@@ -153,10 +154,14 @@ bool checkNeighbourValidity(byte location, byte direction) {
   else if (direction == west) return delineariseCol(location) > 0;
 }
 
-byte getTargetAbsoluteDirection(short target, short location) {
-  short diff = target - location;
+byte getTargetAbsoluteDirection() {
+  short diff = targetCell - currentCell;
   if (diff == -16) return north;
   if (diff == 1) return east;
   if (diff == 16) return south;
   if (diff == -1) return west;
+}
+
+byte getTargetRelativeDirection() {
+  return (getTargetAbsoluteDirection() + 4 - currentDir) % 4;
 }
