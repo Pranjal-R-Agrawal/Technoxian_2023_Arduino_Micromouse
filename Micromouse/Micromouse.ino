@@ -74,20 +74,19 @@ void setup() {
 
 void loop() {
   while (currentCell != targetCells[0] && currentCell != targetCells[1] && currentCell != targetCells[2] && currentCell != targetCells[3]) {
-    updateWalls(currentCell);
-    flood(currentCell);
-    updateTargetCell(currentCell);
-    goToTargetCell(currentCell);
+    updateWalls();
+    flood();
+    updateTargetCell();
+    goToTargetCell();
     currentCell = targetCell;
   }
 }
 
-void flood(byte location) {
-  floodQueue.enqueue(location);
+void flood() {
+  floodQueue.enqueue(currentCell);
   while (!floodQueue.isEmpty()) {
     readingCellLoc = *floodQueue.dequeue();
     readingCellDistance = floodArray[readingCellLoc].flood;
-    minNeighbourDistance = getNeighbourDistance(readingCellLoc, north);
     minNeighbourDistance = 255;
     for (byte i = 0; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
     if (readingCellDistance != minNeighbourDistance + 1) {
@@ -97,12 +96,12 @@ void flood(byte location) {
   }
 }
 
-void updateTargetCell(byte location) {
-  targetCell = getNeighbourLocation(location, 0);
-  minNeighbourDistance = getNeighbourDistance(location, 0);
+void updateTargetCell() {
+  targetCell = getNeighbourLocation(currentCell, 0);
+  minNeighbourDistance = getNeighbourDistance(currentCell, 0);
   for (byte i = 1; i < 4; i++) {
-    readingCellLoc = getNeighbourLocation(location, i);
-    readingCellDistance = getNeighbourDistance(location, i);
+    readingCellLoc = getNeighbourLocation(currentCell, i);
+    readingCellDistance = getNeighbourDistance(currentCell, i);
     if (readingCellDistance < minNeighbourDistance) {
       minNeighbourDistance = readingCellDistance;
       targetCell = readingCellLoc;
@@ -110,8 +109,8 @@ void updateTargetCell(byte location) {
   }
 }
 
-void goToTargetCell(byte location) {
-  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell, location) + 4 - currentDir) % 4;
+void goToTargetCell() {
+  targetRelativeDirection = (getTargetAbsoluteDirection(targetCell, currentCell) + 4 - currentDir) % 4;
   if (targetRelativeDirection == north) {
     // motor function to go straight
   } else if (targetRelativeDirection == east) {
@@ -126,26 +125,23 @@ void goToTargetCell(byte location) {
   updateDirection(&rightDir, updateDirectionTurnAmount[targetRelativeDirection]);
 }
 
-void updateWalls(byte location) {
+void updateWalls() {
   if (analogRead(leftSensor) > threshold) {
-    markWall(location, leftDir);
-    if (checkNeighbourValidity(location, leftDir)) {
-      neighbourLocation = getNeighbourLocation(location, leftDir);
-      markWall(neighbourLocation, (leftDir + 2) % 4);
+    markWall(currentCell, leftDir);
+    if (checkNeighbourValidity(currentCell, leftDir)) {
+      markWall(getNeighbourLocation(currentCell, leftDir), (leftDir + 2) % 4);
     }
   }
   if (analogRead(centreSensor) > threshold) {
-    markWall(location, currentDir);
-    if (checkNeighbourValidity(location, currentDir)) {
-      neighbourLocation = getNeighbourLocation(location, currentDir);
-      markWall(neighbourLocation, (currentDir + 2) % 4);
+    markWall(currentCell, currentDir);
+    if (checkNeighbourValidity(currentCell, currentDir)) {
+      markWall(getNeighbourLocation(currentCell, currentDir), (currentDir + 2) % 4);
     }
   }
   if (analogRead(rightSensor) > threshold) {
-    markWall(location, rightDir);
-    if (checkNeighbourValidity(location, rightDir)) {
-      neighbourLocation = getNeighbourLocation(location, rightDir);
-      markWall(neighbourLocation, (rightDir + 2) % 4);
+    markWall(currentCell, rightDir);
+    if (checkNeighbourValidity(currentCell, rightDir)) {
+      markWall(getNeighbourLocation(currentCell, rightDir), (rightDir + 2) % 4);
     }
   }
 }
