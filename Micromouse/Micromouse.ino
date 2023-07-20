@@ -11,7 +11,7 @@
 #define cols 16
 
 // Matrix macros
-#define linearise(row, col) row * cols + col
+#define linearise(row, col) row* cols + col
 #define delineariseRow(location) location / cols
 #define delineariseCol(location) location % cols
 
@@ -21,15 +21,15 @@
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
 
 // Cell macros
-#define getNeighbourLocation(location, direction) location + cellDirectionAddition[direction]  // Calculates the location of neighbour
+#define getNeighbourLocation(location, direction) (byte) ((short) location + cellDirectionAddition[direction])  // Calculates the location of neighbour
 #define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
 
 // Direction macros
 #define updateDirection(currentDirection, turn) *currentDirection = (*currentDirection + turn) % 4  // Updates the passed direction
-#define getTargetAbsoluteDirection(diff) (diff == -rows) ? north : (diff == 1)  ? east \
-                                                               : (diff == rows) ? south \
-                                                               : (diff == -1) ? west \
-                                                                              : west  // Determines direction from difference between cell locations
+#define getTargetAbsoluteDirection(diff) (diff == -rows) ? north : (diff == 1)    ? east \
+                                                                 : (diff == rows) ? south \
+                                                                 : (diff == -1)   ? west \
+                                                                                  : west  // Determines direction from difference between cell locations
 
 #define north 0
 #define east 1
@@ -59,16 +59,15 @@ CircularBufferQueue floodQueue;                                                 
 
 byte currentCell = linearise(0, 0);
 byte leftDir = north, currentDir = east, rightDir = south;
-byte cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
+short cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 
 byte readingCellLoc, readingCellDistance, minNeighbourDistance, targetCell, targetRelativeDirection, neighbourLocation;
 
 void setup() {
-  Serial.begin(9600);
   for (byte i = 0; i < (rows * cols); i++) {
     floodArray[i].flood = min(min(distance(i, targetCells[0]), distance(i, targetCells[1])), min(distance(i, targetCells[2]), distance(i, targetCells[3])));
-    floodArray[i].neighbours = 0;  // The bot assumes that there are no walls
+    floodArray[i].neighbours = 0;
     if (i == 255) break;
   }
 }
@@ -154,5 +153,5 @@ bool checkNeighbourValidity(byte location, byte direction) {
   if (direction == north) return delineariseRow(location) > 0;
   else if (direction == east) return delineariseCol(location) < (cols - 1);
   else if (direction == south) return delineariseRow(location) < (rows - 1);
-  else if (direction == west) return delineariseCol(location) > 0
+  else if (direction == west) return delineariseCol(location) > 0;
 }
