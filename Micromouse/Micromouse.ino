@@ -92,10 +92,11 @@ void flood(byte location) {
     readingCellLoc = *floodQueue.dequeue();
     readingCellDistance = floodArray[readingCellLoc].flood;
     minNeighbourDistance = getNeighbourDistance(readingCellLoc, north);
-    for (byte i = 1; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
+    minNeighbourDistance = 255;
+    for (byte i = 0; i < 4; i++) minNeighbourDistance = min(minNeighbourDistance, getNeighbourDistance(readingCellLoc, i));
     if (readingCellDistance != minNeighbourDistance + 1) {
-      readingCellDistance == minNeighbourDistance + 1;
-      for (byte i = 0; i < 4; i++) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
+      floodArray[readingCellLoc].flood = minNeighbourDistance + 1;
+      for (byte i = 0; i < 4; i++) if (!wallExists(readingCellLoc, i)) floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
     }
   }
 }
