@@ -5,6 +5,7 @@
 
 class CircularBufferQueue {
   public:
+    CircularBufferQueue(short size);
     bool enqueue(byte item);
     byte* dequeue();
     byte* peek();
@@ -13,7 +14,8 @@ class CircularBufferQueue {
   private:
     short start = -1;
     short end = -1;
-    byte array[256];
+    short length = 0;
+    byte* array;
     bool isFull();
 };
 
