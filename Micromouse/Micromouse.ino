@@ -68,6 +68,10 @@ void setup() {
   for (byte i = 0; i < (rows * cols); i++) {
     floodArray[i].flood = min(min(distance(i, targetCells[0]), distance(i, targetCells[1])), min(distance(i, targetCells[2]), distance(i, targetCells[3])));
     floodArray[i].neighbours = 0;
+    if (delineariseRow(i) == 0) markWall(i, north);
+    if (delineariseCol(i) == 0) markWall(i, west);
+    if (delineariseRow(i) == (rows - 1)) markWall(i, south);
+    if (delineariseCol(i) == (cols - 1)) markWall(i, east);
     if (i == 255) break;
   }
 }
