@@ -1,7 +1,7 @@
 /** Resources
   * https://docs.arduino.cc/learn/programming/bit-math
-  * http://www.123seminarsonly.com/Seminar-Reports/038/59360985-Maze-Solving-Algorithms.pdf
-  * https://github.com/Craga89/Micromouse/
+  * https://marsuniversity.github.io/ece387/FloodFill.pdf
+  * http://craga89.github.io/Micromouse/
   * https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
 */
 
@@ -20,7 +20,7 @@
 #define markWall(location, direction) floodArray[location].neighbours |= 1 << direction
 #define wallExists(location, direction) bitRead(floodArray[location].neighbours, direction)
 
-// Cell macros
+// Neighbour macros
 #define getNeighbourLocation(location, direction) (byte)((short)location + cellDirectionAddition[direction])  // Calculates the location of neighbour
 #define getNeighbourDistance(location, direction) wallExists(location, direction) ? 255 : floodArray[getNeighbourLocation(location, direction)].flood
 
@@ -98,8 +98,8 @@ void flood() {
     if (minNeighbourDistance != readingCellDistance - 1) {
       floodArray[readingCellLoc].flood = minNeighbourDistance + 1;
       for (byte i = 0; i < 4; i++) {
-        if (checkNeighbourValidity(readingCellLoc, i)) {
-          if (!isCentre(getNeighbourLocation(readingCellLoc, i))) {
+        if (isNeighbourValid(readingCellLoc, i)) {
+          if (!isDestination(getNeighbourLocation(readingCellLoc, i))) {
             floodQueue.enqueue(getNeighbourLocation(readingCellLoc, i));
           }
         }
@@ -144,25 +144,25 @@ void goToTargetCell() {
 void updateWalls() {
   if (analogRead(leftSensor) > threshold) {
     markWall(currentCell, leftDir);
-    if (checkNeighbourValidity(currentCell, leftDir)) {
+    if (isNeighbourValid(currentCell, leftDir)) {
       markWall(getNeighbourLocation(currentCell, leftDir), (leftDir + 2) % 4);
     }
   }
   if (analogRead(centreSensor) > threshold) {
     markWall(currentCell, currentDir);
-    if (checkNeighbourValidity(currentCell, currentDir)) {
+    if (isNeighbourValid(currentCell, currentDir)) {
       markWall(getNeighbourLocation(currentCell, currentDir), (currentDir + 2) % 4);
     }
   }
   if (analogRead(rightSensor) > threshold) {
     markWall(currentCell, rightDir);
-    if (checkNeighbourValidity(currentCell, rightDir)) {
+    if (isNeighbourValid(currentCell, rightDir)) {
       markWall(getNeighbourLocation(currentCell, rightDir), (rightDir + 2) % 4);
     }
   }
 }
 
-bool checkNeighbourValidity(byte location, byte direction) {
+bool isNeighbourValid(byte location, byte direction) {
   if (direction == north) return delineariseRow(location) > 0;
   else if (direction == east) return delineariseCol(location) < (cols - 1);
   else if (direction == south) return delineariseRow(location) < (rows - 1);
@@ -181,6 +181,6 @@ byte getTargetRelativeDirection(byte target) {
   return (getTargetAbsoluteDirection(target) + 4 - currentDir) % 4;
 }
 
-bool isCentre(byte location) {
+bool isDestination(byte location) {
   return floodArray[location].flood == 0;
 }
