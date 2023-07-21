@@ -57,18 +57,20 @@ byte targetCells[] = { linearise(7, 7), linearise(7, 8), linearise(8, 7), linear
 CircularBufferQueue floodQueue(256);  // This queue stores the cells that need to be flooded
 
 byte currentCell = linearise(0, 0), targetCell;
-byte leftDir = north, currentDir = east, rightDir = south;
+byte leftDir = north, currentDir = east, rightDir = south, nextLeftDir = leftDir, nextDir = currentDir, nextRightDir = rightDir;
 short cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 byte targetScoreFromDirection[4] = { 0, 1, 2, 1 };
 
 byte readingCellLoc, readingCellDistance, readingCellScore, minNeighbourDistance, targetRelativeDirection, targetScore;
+byte distanceFromTarget = 1;
 
 void setup() {
   for (byte i = 0; i < (rows * cols); i++) {
     floodArray[i].flood = 255;
     for (byte j = 0; j < 4; j++) floodArray[i].flood = min(floodArray[i].flood, distance(i, targetCells[j]));
     floodArray[i].neighbours = 0;
+    floodArray[i].visited = 0;
     if (delineariseRow(i) == 0) markWall(i, north);
     if (delineariseCol(i) == 0) markWall(i, west);
     if (delineariseRow(i) == (rows - 1)) markWall(i, south);
@@ -84,6 +86,7 @@ void loop() {
     updateTargetCell();
     goToTargetCell();
     currentCell = targetCell;
+    floodArray[currentCell].visited = 1;
   }
 }
 
@@ -125,10 +128,25 @@ void updateTargetCell() {
       }
     }
   }
+
+  targetRelativeDirection = getTargetRelativeDirection(targetCell);
+
+  updateDirection(&nextLeftDir, updateDirectionTurnAmount[targetRelativeDirection]);
+  updateDirection(&nextDir, updateDirectionTurnAmount[targetRelativeDirection]);
+  updateDirection(&nextRightDir, updateDirectionTurnAmount[targetRelativeDirection]);
+
+  distanceFromTarget = 1;
+
+  while (isNeighbourValid(targetCell, nextDir)) {
+    readingCellLoc = getNeighbourLocation(targetCell, nextDir);
+    if (isTunnel(readingCellLoc) && floodArray[readingCellLoc].flood == floodArray[targetCell].flood - 1) {
+      targetCell = readingCellLoc;
+      distanceFromTarget++;
+    } else break;
+  }
 }
 
 void goToTargetCell() {
-  targetRelativeDirection = getTargetRelativeDirection(targetCell);
   if (targetRelativeDirection == north) {
     // motor function to go straight
   } else if (targetRelativeDirection == east) {
@@ -190,4 +208,8 @@ bool isDestination(byte location) {
 bool isEnclosed(byte location) {
   // 15 is 00001111 in binary, which means that there are walls in 4 all 4 directions of the cell
   return floodArray[location].neighbours == 15;
+}
+
+bool isTunnel(byte location) {
+  return (!wallExists(location, nextDir)) && wallExists(location, nextLeftDir) && wallExists(location, nextRightDir) && floodArray[location].visited;
 }
