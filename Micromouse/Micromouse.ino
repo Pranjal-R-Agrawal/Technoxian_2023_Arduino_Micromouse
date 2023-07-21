@@ -91,6 +91,7 @@ void flood() {
   floodQueue.enqueue(currentCell);
   while (!floodQueue.isEmpty()) {
     readingCellLoc = *floodQueue.dequeue();
+    if (isEnclosed(readingCellLoc)) continue;
     readingCellDistance = floodArray[readingCellLoc].flood;
     minNeighbourDistance = 255;
     for (byte i = 0; i < 4; i++) {
@@ -184,4 +185,9 @@ byte getTargetRelativeDirection(byte target) {
 
 bool isDestination(byte location) {
   return floodArray[location].flood == 0;
+}
+
+bool isEnclosed(byte location) {
+  // 15 is 00001111 in binary, which means that there are walls in 4 all 4 directions of the cell
+  return floodArray[location].neighbours == 15;
 }
