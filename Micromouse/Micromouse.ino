@@ -172,9 +172,9 @@ bool isNeighbourValid(byte location, byte direction) {
 
 byte getTargetAbsoluteDirection(byte target) {
   short diff = (short)target - (short)currentCell;
-  if (diff == -16) return north;
+  if (diff == -rows) return north;
   if (diff == 1) return east;
-  if (diff == 16) return south;
+  if (diff == rows) return south;
   if (diff == -1) return west;
 }
 
