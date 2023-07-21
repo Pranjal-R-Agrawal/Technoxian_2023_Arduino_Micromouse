@@ -43,11 +43,12 @@
 #define diagonalRightSenson 3
 #define rightSensor 6
 
-#define threshold 200
+#define wallThreshold 50
 
 struct cell {
   byte flood;
   byte neighbours;
+  byte visited;
 };
 
 cell floodArray[rows * cols];  // This array stores the flood value and neighbour data for all the cells
@@ -162,19 +163,19 @@ void goToTargetCell() {
 }
 
 void updateWalls() {
-  if (analogRead(leftSensor) > threshold) {
+  if (analogRead(leftSensor) > wallThreshold) {
     markWall(currentCell, leftDir);
     if (isNeighbourValid(currentCell, leftDir)) {
       markWall(getNeighbourLocation(currentCell, leftDir), (leftDir + 2) % 4);
     }
   }
-  if (analogRead(centreSensor) > threshold) {
+  if (analogRead(centreSensor) > wallThreshold) {
     markWall(currentCell, currentDir);
     if (isNeighbourValid(currentCell, currentDir)) {
       markWall(getNeighbourLocation(currentCell, currentDir), (currentDir + 2) % 4);
     }
   }
-  if (analogRead(rightSensor) > threshold) {
+  if (analogRead(rightSensor) > wallThreshold) {
     markWall(currentCell, rightDir);
     if (isNeighbourValid(currentCell, rightDir)) {
       markWall(getNeighbourLocation(currentCell, rightDir), (rightDir + 2) % 4);
