@@ -5,6 +5,13 @@
   * https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
 */
 
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
 #include "src/CircularBufferQueue/CircularBufferQueue.h"
 #include <EEPROM.h>
 
@@ -18,9 +25,11 @@ SSD1306AsciiAvrI2c oled;
 #include <Encoder.h>
 Encoder myEnc1(2, 8);
 Encoder myEnc2(3, 12);
+#define sensor_On_Pin 17
+int sensorValue[7];
 
-#define rows 16
-#define cols 16
+#define rows 5
+#define cols 5
 
 // Matrix macros
 #define linearise(row, col) row* cols + col
@@ -53,11 +62,11 @@ Encoder myEnc2(3, 12);
 #define diagonalLeftSensor 1
 #define centreSensor 2
 #define diagonalRightSenson 3
-#define rightSensor 6
+#define rightSensor 4
 
-#define encoderStepsMenu 4
+#define encoderStepsMenu 30
 
-#define wallThreshold 50
+#define wallThreshold 700
 
 struct cell {
   byte flood;
@@ -87,8 +96,12 @@ short change;
 byte* values[7] = { &startCell, &(targetCells[0]), &(targetCells[1]), &(targetCells[2]), &(targetCells[3]), &startDir, &resetMazeEEPROM };
 
 void setup() {
-  oledSetup();
+  sbi(ADCSRA, ADPS2);
+  cbi(ADCSRA, ADPS1);
+  cbi(ADCSRA, ADPS0);
   pinMode(11, INPUT_PULLUP);
+  pinMode(sensor_On_Pin, OUTPUT);
+  oledSetup();
   updateMazeValuesFromEEPROM();
   displayMenu();
   while (digitalRead(11)) updateEncoder();
@@ -97,6 +110,10 @@ void setup() {
   if (resetMazeEEPROM) resetMazeValuesInEEPROM();
   else updateMazeValuesInEEPROM();
   resetEnc();
+  oled.clear();
+  oled.println("CALLIBRATE");
+  while (digitalRead(11)) {};
+  calibrate();
 }
 
 void loop() {
@@ -184,25 +201,28 @@ void goToTargetCell() {
     turn(-90, 70);
   }
   moveForward(distanceFromTarget, 100);
+
   updateDirection(&leftDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&currentDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&rightDir, updateDirectionTurnAmount[targetRelativeDirection]);
 }
 
 void updateWalls() {
-  if (analogRead(leftSensor) > wallThreshold) {
+  readWall();
+  if (sensorValue[leftSensor] > wallThreshold) {
     markWall(currentCell, leftDir);
     if (isNeighbourValid(currentCell, leftDir)) {
       markWall(getNeighbourLocation(currentCell, leftDir), (leftDir + 2) % 4);
     }
   }
-  if (analogRead(centreSensor) > wallThreshold) {
+  if (sensorValue[centreSensor] > wallThreshold) {
     markWall(currentCell, currentDir);
     if (isNeighbourValid(currentCell, currentDir)) {
       markWall(getNeighbourLocation(currentCell, currentDir), (currentDir + 2) % 4);
     }
+    alignFront();
   }
-  if (analogRead(rightSensor) > wallThreshold) {
+  if (sensorValue[rightSensor] > wallThreshold) {
     markWall(currentCell, rightDir);
     if (isNeighbourValid(currentCell, rightDir)) {
       markWall(getNeighbourLocation(currentCell, rightDir), (rightDir + 2) % 4);
@@ -255,7 +275,7 @@ void initialiseDirections() {
 /////////////EEPROM//////////////
 ////////////////////////////////
 
-long newPosition1 = 0, newPosition2 = 0, oldPosition1 = -999, oldPosition2 = -999;
+long newPosition1 = myEnc1.read(), newPosition2 = myEnc2.read(), oldPosition1 = myEnc1.read(), oldPosition2 = myEnc2.read();
 
 void updateMazeValuesFromEEPROM() {
   for (byte i = 0; i < (rows * cols); i++) {
@@ -323,8 +343,8 @@ void oledSetup() {
 void updateEncoder() {
   newPosition1 = myEnc1.read();
   newPosition2 = myEnc2.read();
-  if (abs(newPosition1 - oldPosition1) >= 4) {
-    menu += (newPosition1 - oldPosition1) / 4;
+  if (abs(newPosition1 - oldPosition1) >= encoderStepsMenu) {
+    menu += (newPosition1 - oldPosition1) / encoderStepsMenu;
     oldPosition1 = newPosition1;
     if (menu > 100) menu = 0;
     if (menu > 6) menu = 6;

@@ -1,9 +1,4 @@
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#endif
-#ifndef sbi
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#endif
+
 
 #include <SparkFun_TB6612.h>
 
@@ -21,6 +16,7 @@ const int offsetB = 1;
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 
+
 long distanceTravelled;
 
 int P, D, I, previousError, PIDvalue, error;
@@ -30,8 +26,8 @@ float Kp = 1;
 float Kd = 10;
 float Ki = 0;
 
-int minValues[7], maxValues[7], threshold[7], sensorValue[7], sensorArray[7];
-int wallValues[5] = { 80, 80, 200, 80, 80 };
+int minValues[7], maxValues[7], threshold[7], sensorArray[7];
+int wallValues[5];
 
 double encStart1 = 0;
 double encStart2 = 0;
@@ -55,7 +51,7 @@ void moveForward(long blocks, int speed) {
       currentSpeed = currentSpeed + 0.05;
     }
 
-    int error = (newPosition1 - encStart1) - (newPosition2 - encStart2);
+    long error = (newPosition1 - encStart1) - (newPosition2 - encStart2);
     // if (analogRead(6) > 30 && analogRead(0) > 30) error += (analogRead(6) - analogRead(0) - 10) * 0.75;
     P = error;
     I = I + error;
@@ -63,9 +59,21 @@ void moveForward(long blocks, int speed) {
 
     PIDvalue = (Kp * P) + (Ki * I) + (Kd * D);
     previousError = error;
-    int wallError = 0.5 * (sensorValue[0] - sensorValue[6] + 50);  // 50 is offset between left and right side- right being greater
-    if (sensorValue[0] < 25 || sensorValue[6] < 25) wallError = 0;
+    long wallError;
 
+    /* if (sensorValue[0] < 200 && sensorValue[4] > 200) {
+      wallError = 0.5*(sensorValue[4] -500);
+    } else if (sensorValue[4] < 200 && sensorValue[0] > 200) {
+      wallError = 0.5*(500- sensorValue[0]) ;
+    } else 
+    if (sensorValue[0] < 300 || sensorValue[4] < 300) {
+      wallError = 0;
+    } else {
+      wallError = 0.3 * (sensorValue[0] - sensorValue[4] + (wallValues[4] - wallValues[0]));  // 50 is offset between left and right side- right being greater
+    }
+    */
+    wallError = 0.5 * (sensorValue[0] - sensorValue[4] + (wallValues[4] - wallValues[0]));  // 50 is offset between left and right side- right being greater
+    if (sensorValue[0] < 300 || sensorValue[4] < 300) wallError = 0;
     lsp = currentSpeed - PIDvalue + wallError;
     rsp = currentSpeed + PIDvalue - wallError;
 
@@ -130,13 +138,14 @@ void turn(int angle, int speed) {
   motor2.drive(0);
 }
 void alignFront() {
-  float speedFactor = 1;
-  int lrOffset = 0;
+  float speedFactor = 0.4;
+  int lrOffset = wallValues[1] - wallValues[3];
   int alignUpperSpeed = 60;
   for (int i = 0; i < 2500; i++) {
-    int y = wallValues[2] - analogRead(2);
-    int x = analogRead(1) - analogRead(3) - lrOffset;
-    x *= 0.5;
+    readWall();
+    int y = 500 - sensorValue[2];
+    int x = sensorValue[1] - sensorValue[3] + lrOffset;
+    x *= 0.1;
     int leftSpeed = speedFactor * (y - x);
     int rightSpeed = speedFactor * (y + x);
 
@@ -176,48 +185,55 @@ void resetEnc() {
 }
 
 void calibrate() {
-  for (int i = 0; i < 7; i++) {
-    if (i != 4 && i != 5) {
-      minValues[i] = analogRead(i);
-      maxValues[i] = analogRead(i);
-    }
+  digitalWrite(sensor_On_Pin, HIGH);
+
+  for (int i = 0; i < 5; i++) {
+    int j = i;
+    if (i > 2) j = i + 3;
+    minValues[i] = analogRead(j);
+    maxValues[i] = analogRead(j);
   }
 
-  for (int i = 0; i < 5000; i++) {
+  for (int i = 0; i < 10000; i++) {
     motor1.drive(50);
     motor2.drive(-50);
 
-    for (int i = 0; i < 7; i++) {
-      if (i != 4 && i != 5) {
-        if (analogRead(i) < minValues[i]) {
-          minValues[i] = analogRead(i);
-        }
-        if (analogRead(i) > maxValues[i]) {
-          maxValues[i] = analogRead(i);
-        }
+    for (int i = 0; i < 5; i++) {
+      int j = i;
+      if (i > 2) j = i + 3;
+
+      if (analogRead(j) < minValues[i]) {
+        minValues[i] = analogRead(j);
+      }
+      if (analogRead(j) > maxValues[i]) {
+        maxValues[i] = analogRead(j);
       }
     }
   }
-
-  for (int i = 0; i < 7; i++) {
-    if (i != 4 && i != 5) {
-      threshold[i] = (minValues[i] + maxValues[i]) / 2;
-      Serial.print(threshold[i]);
-      Serial.print(" ");
-    }
+  digitalWrite(sensor_On_Pin, LOW);
+  /*
+  for (int i = 0; i < 5; i++) {
+    threshold[i] = (minValues[i] + maxValues[i]) / 2;
+    Serial.print(threshold[i]);
+    Serial.print(" ");
   }
   Serial.println();
-
+*/
   motor1.drive(0);
   motor2.drive(0);
 }
 
 void readWall() {
-  for (int i = 0; i < 7; i++) {
-    if (i != 4 && i != 5) {
-      //  sensorValue[i] = map(analogRead(i), minValues[i], maxValues[i], 0, 1000);
-      //  sensorValue[i] = constrain(sensorValue[i], 0, 1000);
-      sensorValue[i] = analogRead(i);
-    }
+  digitalWrite(sensor_On_Pin, HIGH);
+  for (int i = 0; i < 5; i++) {
+    int j = i;
+    if (i > 2) j = i + 3;
+    sensorValue[i] = map(analogRead(j), minValues[i], maxValues[i], 0, 1000);
+    sensorValue[i] = constrain(sensorValue[i], 0, 1000);
+    //Serial.print(sensorValue[i]);
+    //Serial.print("  ");
+    //sensorValue[i] = analogRead(j);
   }
+  digitalWrite(sensor_On_Pin, LOW);
+  //Serial.println();
 }
