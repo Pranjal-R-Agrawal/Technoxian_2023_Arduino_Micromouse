@@ -6,6 +6,18 @@
 */
 
 #include "src/CircularBufferQueue/CircularBufferQueue.h"
+#include <EEPROM.h>
+
+// OLED Setup
+#include <SSD1306Ascii.h>
+#include <SSD1306AsciiAvrI2c.h>
+#define I2C_ADDRESS 0x3C
+SSD1306AsciiAvrI2c oled;
+
+// Encoder Setup
+#include <Encoder.h>
+Encoder myEnc1(2, 8);
+Encoder myEnc2(3, 12);
 
 #define rows 16
 #define cols 16
@@ -43,6 +55,8 @@
 #define diagonalRightSenson 3
 #define rightSensor 6
 
+#define encoderStepsMenu 4
+
 #define wallThreshold 50
 
 struct cell {
@@ -53,12 +67,13 @@ struct cell {
 
 cell floodArray[rows * cols];  // This array stores the flood value and neighbour data for all the cells
 
-byte targetCells[] = { linearise(7, 7), linearise(7, 8), linearise(8, 7), linearise(8, 8) };  // This array stores the target cells
+byte targetCells[4];  // This array stores the target cells
 
 CircularBufferQueue floodQueue(256);  // This queue stores the cells that need to be flooded
 
-byte currentCell = linearise(0, 0), targetCell;
-byte leftDir = north, currentDir = east, rightDir = south, nextLeftDir = leftDir, nextDir = currentDir, nextRightDir = rightDir;
+byte startCell, currentCell, targetCell;                                           // startCell is the starting position
+byte startDir, leftDir, currentDir, rightDir, nextLeftDir, nextDir, nextRightDir;  // startDir is the initial orientation of the bot
+
 short cellDirectionAddition[4] = { -rows, 1, rows, -1 };  // The location of a neighbouring cell can be obtained using the values in this dictionary
 byte updateDirectionTurnAmount[4] = { 0, rightTurn, uTurn, leftTurn };
 byte targetScoreFromDirection[4] = { 0, 1, 2, 1 };
@@ -66,21 +81,32 @@ byte targetScoreFromDirection[4] = { 0, 1, 2, 1 };
 byte readingCellLoc, readingCellDistance, readingCellScore, minNeighbourDistance, targetRelativeDirection, targetScore;
 byte distanceFromTarget = 1;
 
+byte resetMazeEEPROM = 0;  // This determines whether or not the maze data stored in the EEPROM should be reset
+byte menu = 0;             // This determines which value the encoder updates
+short change;
+byte* values[7] = { &startCell, &(targetCells[0]), &(targetCells[1]), &(targetCells[2]), &(targetCells[3]), &startDir, &resetMazeEEPROM };
+
 void setup() {
-  for (byte i = 0; i < (rows * cols); i++) {
-    floodArray[i].flood = 255;
-    for (byte j = 0; j < 4; j++) floodArray[i].flood = min(floodArray[i].flood, distance(i, targetCells[j]));
-    floodArray[i].neighbours = 0;
-    floodArray[i].visited = 0;
-    if (delineariseRow(i) == 0) markWall(i, north);
-    if (delineariseCol(i) == 0) markWall(i, west);
-    if (delineariseRow(i) == (rows - 1)) markWall(i, south);
-    if (delineariseCol(i) == (cols - 1)) markWall(i, east);
-    if (i == 255) break;
-  }
+  oledSetup();
+  pinMode(11, INPUT_PULLUP);
+  updateMazeValuesFromEEPROM();
+  displayMenu();
+  while (digitalRead(11)) updateEncoder();
+  oled.clear();
+  oled.println("Updating EEPROM");
+  if (resetMazeEEPROM) resetMazeValuesInEEPROM();
+  else updateMazeValuesInEEPROM();
+  resetEnc();
 }
 
 void loop() {
+  currentCell = startCell;
+  initialiseDirections();
+  oled.clear();
+  oled.println("START");
+  while (digitalRead(11)) {}
+  oled.clear();
+  oled.println("Running");
   while (currentCell != targetCells[0] && currentCell != targetCells[1] && currentCell != targetCells[2] && currentCell != targetCells[3]) {
     updateWalls();
     flood();
@@ -89,6 +115,7 @@ void loop() {
     currentCell = targetCell;
     floodArray[currentCell].visited = 1;
   }
+  updateMazeValuesInEEPROM();
 }
 
 void flood() {
@@ -149,14 +176,14 @@ void updateTargetCell() {
 
 void goToTargetCell() {
   if (targetRelativeDirection == north) {
-    // motor function to go straight
   } else if (targetRelativeDirection == east) {
-    // motor function to take a left-turn
+    turn(90, 70);
   } else if (targetRelativeDirection == south) {
-    // motor function to take a u-turn
+    turn(180, 70);
   } else if (targetRelativeDirection == west) {
-    // motor function to take a left-turn
+    turn(-90, 70);
   }
+  moveForward(distanceFromTarget, 100);
   updateDirection(&leftDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&currentDir, updateDirectionTurnAmount[targetRelativeDirection]);
   updateDirection(&rightDir, updateDirectionTurnAmount[targetRelativeDirection]);
@@ -213,4 +240,134 @@ bool isEnclosed(byte location) {
 
 bool isTunnel(byte location) {
   return (!wallExists(location, nextDir)) && wallExists(location, nextLeftDir) && wallExists(location, nextRightDir) && floodArray[location].visited;
+}
+
+void initialiseDirections() {
+  currentDir = startDir;
+  leftDir = (currentDir + 3) % 4;
+  rightDir = (currentDir + 1) % 4;
+  nextLeftDir = leftDir;
+  nextDir = currentDir;
+  nextRightDir = rightDir;
+}
+
+//////////////////////////////////
+/////////////EEPROM//////////////
+////////////////////////////////
+
+long newPosition1 = 0, newPosition2 = 0, oldPosition1 = -999, oldPosition2 = -999;
+
+void updateMazeValuesFromEEPROM() {
+  for (byte i = 0; i < (rows * cols); i++) {
+    floodArray[i].flood = EEPROM.read(i);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < (rows * cols); i++) {
+    floodArray[i].neighbours = EEPROM.read((rows * cols) + (short)i);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < (rows * cols); i++) {
+    floodArray[i].visited = EEPROM.read((2 * rows * cols) + (short)i);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < 6; i++) {
+    *(values[i]) = EEPROM.read((3 * rows * cols) + (short)i);
+  }
+}
+
+void updateMazeValuesInEEPROM() {
+  for (byte i = 0; i < (rows * cols); i++) {
+    EEPROM.write(i, floodArray[i].flood);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < (rows * cols); i++) {
+    EEPROM.write((rows * cols) + (short)i, floodArray[i].neighbours);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < (rows * cols); i++) {
+    EEPROM.write((2 * rows * cols) + (short)i, floodArray[i].visited);
+    if (i == 255) break;
+  }
+  for (byte i = 0; i < 6; i++) {
+    EEPROM.write((3 * rows * cols) + (short)i, *(values[i]));
+  }
+}
+
+void resetMazeValuesInEEPROM() {
+  for (byte i = 0; i < (rows * cols); i++) {
+    floodArray[i].flood = 255;
+    for (byte j = 0; j < 4; j++) floodArray[i].flood = min(floodArray[i].flood, distance(i, targetCells[j]));
+    floodArray[i].neighbours = 0;
+    floodArray[i].visited = 0;
+    if (delineariseRow(i) == 0) markWall(i, north);
+    if (delineariseCol(i) == 0) markWall(i, west);
+    if (delineariseRow(i) == (rows - 1)) markWall(i, south);
+    if (delineariseCol(i) == (cols - 1)) markWall(i, east);
+    if (i == 255) break;
+  }
+  updateMazeValuesInEEPROM();
+}
+
+//////////////////////////////////
+///////////OLED SETUP////////////
+////////////////////////////////
+
+void oledSetup() {
+  oled.begin(&Adafruit128x32, I2C_ADDRESS);
+  oled.setFont(Adafruit5x7);
+  oled.clear();
+  oled.set2X();
+  oled.setLetterSpacing(1.5);
+}
+
+void updateEncoder() {
+  newPosition1 = myEnc1.read();
+  newPosition2 = myEnc2.read();
+  if (abs(newPosition1 - oldPosition1) >= 4) {
+    menu += (newPosition1 - oldPosition1) / 4;
+    oldPosition1 = newPosition1;
+    if (menu > 100) menu = 0;
+    if (menu > 6) menu = 6;
+    displayMenu();
+  }
+  if (abs(newPosition2 - oldPosition2) >= encoderStepsMenu) {
+    change = (newPosition2 - oldPosition2) / encoderStepsMenu;
+    oldPosition2 = newPosition2;
+    if (0 <= menu && menu <= 4) {
+      *(values[menu]) = (*(values[menu]) + change) % (rows * cols);
+    } else if (menu == 5) {
+      *(values[menu]) = (*(values[menu]) + change) % 4;
+    } else if (menu == 6) {
+      *(values[menu]) = (*(values[menu]) + change) % 2;
+    }
+    displayMenu();
+  }
+}
+
+void displayMenu() {
+  oled.clear();
+  if (menu == 0) {
+    oled.println("Start");
+    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+  } else if (menu == 1) {
+    oled.println("End 1");
+    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+  } else if (menu == 2) {
+    oled.println("End 2");
+    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+  } else if (menu == 3) {
+    oled.println("End 3");
+    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+  } else if (menu == 4) {
+    oled.println("End 4");
+    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+  } else if (menu == 5) {
+    oled.println("Direction");
+    oled.println((*(values[menu]) == north) ? "North" : (*(values[menu]) == east)  ? "East"
+                                                      : (*(values[menu]) == south) ? "South"
+                                                                                   : "West");
+  } else if (menu == 6) {
+    oled.println("Reset Maze");
+    oled.println((*(values[menu])) ? "Yes" : "No");
+  }
 }

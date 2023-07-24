@@ -5,10 +5,6 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-#include <Encoder.h>
-Encoder myEnc1(2, 8);
-Encoder myEnc2(3, 12);
-long newPosition1, newPosition2;
 #include <SparkFun_TB6612.h>
 
 #define AIN1 5
@@ -36,9 +32,6 @@ float Ki = 0;
 
 int minValues[7], maxValues[7], threshold[7], sensorValue[7], sensorArray[7];
 int wallValues[5] = { 80, 80, 200, 80, 80 };
-
-long oldPosition1 = -999;
-long oldPosition2 = -999;
 
 double encStart1 = 0;
 double encStart2 = 0;
