@@ -1,5 +1,3 @@
-
-
 #include <SparkFun_TB6612.h>
 
 #define AIN1 5
@@ -15,7 +13,6 @@ const int offsetB = 1;
 
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
-
 
 long distanceTravelled;
 
@@ -72,7 +69,7 @@ void moveForward(long blocks, int speed) {
       wallError = 0.3 * (sensorValue[0] - sensorValue[4] + (wallValues[4] - wallValues[0]));  // 50 is offset between left and right side- right being greater
     }
     */
-    wallError = 0.5 * (sensorValue[0] - sensorValue[4] + (wallValues[4] - wallValues[0]));  // 50 is offset between left and right side- right being greater
+    wallError = 0.3 * (sensorValue[0] - sensorValue[4] + (wallValues[4] - wallValues[0]));  // 50 is offset between left and right side- right being greater
     if (sensorValue[0] < 300 || sensorValue[4] < 300) wallError = 0;
     lsp = currentSpeed - PIDvalue + wallError;
     rsp = currentSpeed + PIDvalue - wallError;
@@ -141,7 +138,7 @@ void alignFront() {
   float speedFactor = 0.4;
   int lrOffset = wallValues[1] - wallValues[3];
   int alignUpperSpeed = 60;
-  for (int i = 0; i < 2500; i++) {
+  for (int i = 0; i < 1500; i++) {
     readWall();
     int y = 500 - sensorValue[2];
     int x = sensorValue[1] - sensorValue[3] + lrOffset;

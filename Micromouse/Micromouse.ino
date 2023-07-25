@@ -66,7 +66,7 @@ int sensorValue[7];
 
 #define encoderStepsMenu 30
 
-#define wallThreshold 700
+#define wallThreshold 120
 
 struct cell {
   byte flood;
@@ -103,6 +103,10 @@ void setup() {
   pinMode(sensor_On_Pin, OUTPUT);
   oledSetup();
   updateMazeValuesFromEEPROM();
+  oled.clear();
+  oled.println("Configure");
+  while (digitalRead(11)){}
+  delay(500);
   displayMenu();
   while (digitalRead(11)) updateEncoder();
   oled.clear();
@@ -113,6 +117,7 @@ void setup() {
   oled.clear();
   oled.println("CALLIBRATE");
   while (digitalRead(11)) {};
+  delay(1000);
   calibrate();
 }
 
