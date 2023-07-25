@@ -28,8 +28,8 @@ Encoder myEnc2(3, 12);
 #define sensor_On_Pin 17
 int sensorValue[7];
 
-#define rows 5
-#define cols 5
+#define rows 16
+#define cols 16
 
 // Matrix macros
 #define linearise(row, col) row* cols + col
@@ -78,7 +78,7 @@ cell floodArray[rows * cols];  // This array stores the flood value and neighbou
 
 byte targetCells[4];  // This array stores the target cells
 
-CircularBufferQueue floodQueue(256);  // This queue stores the cells that need to be flooded
+CircularBufferQueue floodQueue(512);  // This queue stores the cells that need to be flooded
 
 byte startCell, currentCell, targetCell;                                           // startCell is the starting position
 byte startDir, leftDir, currentDir, rightDir, nextLeftDir, nextDir, nextRightDir;  // startDir is the initial orientation of the bot
@@ -98,6 +98,7 @@ byte* values[7] = { &startCell, &(targetCells[0]), &(targetCells[1]), &(targetCe
 long newPosition1, newPosition2, oldPosition1, oldPosition2;
 
 void setup() {
+  Serial.begin(9600);
   sbi(ADCSRA, ADPS2);
   cbi(ADCSRA, ADPS1);
   cbi(ADCSRA, ADPS0);
@@ -113,7 +114,7 @@ void setup() {
   displayMenu();
   while (digitalRead(11)) updateEncoder();
   oled.clear();
-  oled.println("Updating EEPROM");
+  oled.println("Saving");
   if (resetMazeEEPROM) resetMazeValuesInEEPROM();
   else updateMazeValuesInEEPROM();
   resetEnc();
@@ -132,6 +133,7 @@ void loop() {
   while (digitalRead(11)) {}
   oled.clear();
   oled.println("Running");
+  delay(1000);
   while (currentCell != targetCells[0] && currentCell != targetCells[1] && currentCell != targetCells[2] && currentCell != targetCells[3]) {
     updateWalls();
     flood();
@@ -364,7 +366,9 @@ void updateEncoder() {
     } else if (menu == 5) {
       *(values[menu]) = (*(values[menu]) + change) % 4;
     } else if (menu == 6) {
-      *(values[menu]) = (*(values[menu]) + change) % 2;
+      *(values[menu]) = (*(values[menu]) + change);
+      if(*(values[menu]) > 200) *(values[menu]) = 0;
+      else if (*(values[menu]) > 1) *(values[menu]) = 1;
     }
     displayMenu();
   }
@@ -374,19 +378,29 @@ void displayMenu() {
   oled.clear();
   if (menu == 0) {
     oled.println("Start");
-    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+    oled.print(delineariseRow(*(values[menu])));
+    oled.print(", ");
+    oled.println(delineariseCol(*(values[menu])));
   } else if (menu == 1) {
     oled.println("End 1");
-    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+    oled.print(delineariseRow(*(values[menu])));
+    oled.print(", ");
+    oled.println(delineariseCol(*(values[menu])));
   } else if (menu == 2) {
     oled.println("End 2");
-    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+    oled.print(delineariseRow(*(values[menu])));
+    oled.print(", ");
+    oled.println(delineariseCol(*(values[menu])));
   } else if (menu == 3) {
     oled.println("End 3");
-    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+    oled.print(delineariseRow(*(values[menu])));
+    oled.print(", ");
+    oled.println(delineariseCol(*(values[menu])));
   } else if (menu == 4) {
     oled.println("End 4");
-    oled.println((String)(delineariseRow(*(values[menu]))) + ", " + (String)(delineariseCol(*(values[menu]))));
+    oled.print(delineariseRow(*(values[menu])));
+    oled.print(", ");
+    oled.println(delineariseCol(*(values[menu])));
   } else if (menu == 5) {
     oled.println("Direction");
     oled.println((*(values[menu]) == north) ? "North" : (*(values[menu]) == east)  ? "East"
