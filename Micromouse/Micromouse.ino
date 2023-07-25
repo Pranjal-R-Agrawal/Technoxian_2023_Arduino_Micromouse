@@ -95,6 +95,8 @@ byte menu = 0;             // This determines which value the encoder updates
 short change;
 byte* values[7] = { &startCell, &(targetCells[0]), &(targetCells[1]), &(targetCells[2]), &(targetCells[3]), &startDir, &resetMazeEEPROM };
 
+long newPosition1, newPosition2, oldPosition1, oldPosition2;
+
 void setup() {
   sbi(ADCSRA, ADPS2);
   cbi(ADCSRA, ADPS1);
@@ -107,6 +109,7 @@ void setup() {
   oled.println("Configure");
   while (digitalRead(11)){}
   delay(500);
+  newPosition1 = myEnc1.read(), newPosition2 = myEnc2.read(), oldPosition1 = myEnc1.read(), oldPosition2 = myEnc2.read();
   displayMenu();
   while (digitalRead(11)) updateEncoder();
   oled.clear();
@@ -279,8 +282,6 @@ void initialiseDirections() {
 //////////////////////////////////
 /////////////EEPROM//////////////
 ////////////////////////////////
-
-long newPosition1 = myEnc1.read(), newPosition2 = myEnc2.read(), oldPosition1 = myEnc1.read(), oldPosition2 = myEnc2.read();
 
 void updateMazeValuesFromEEPROM() {
   for (byte i = 0; i < (rows * cols); i++) {
