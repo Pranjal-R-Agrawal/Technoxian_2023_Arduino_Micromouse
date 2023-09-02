@@ -10,6 +10,11 @@ Array of 5 IR sensors
 2 600 rpm micro metal gear motors
 
 
-#### Video
-Test Maze Run - https://www.instagram.com/reel/CvSZLGBN-_r/
-Simulator Run - https://drive.google.com/file/d/1eNVqJOWuEcbgEQmEDOBoLha9FvPk7lvz/view?usp=sharing
+#### Videos
+Test Maze Run (youtube) - https://www.youtube.com/watch?v=6baHDssunZ4
+
+Test Maze Run (instagram) - https://www.instagram.com/reel/CvSZLGBN-_r/
+
+Simulator Run, single maze multiple runs - https://www.youtube.com/watch?v=V2KSZHkaBQY
+
+Simulator Run, multiple mazes single run - https://drive.google.com/file/d/1eNVqJOWuEcbgEQmEDOBoLha9FvPk7lvz/view?usp=sharing
